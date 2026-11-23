@@ -1,0 +1,58 @@
+import React, { Component } from 'react';
+import { Grid2 } from '@mui/material';
+import StatCard from './statCard';
+import HighlightCard from './highlightCard';
+import Graphs from './Graphs';
+
+class SportResults extends Component {
+    render() {
+        const { data } = this.props;
+        if (!data) {
+            return (
+                <p color="#FFFFFF">No Data. Please try logging back in</p>
+            )
+        }
+        return (
+            <div className='stats-container'>
+                <div className='section-header'>
+                    Summary Stats
+                </div>
+                <div className='section-break' />
+                <Grid2 
+                    container 
+                    spacing={0} 
+                    justifyContent="center" 
+                    sx={{ 
+                        ml: { xs: 0, sm: 2, md: 5 }, 
+                        mr: { xs: 0, sm: 2, md: 5 },
+                        width: { xs: '100%', sm: 'auto' }
+                    }}
+                >
+                    {Object.entries(data.stats).map(([key, value]) => (
+                        <StatCard
+                            key={key} // Unique key for each card
+                            statName={key}
+                            statData={value}
+                        />
+                    ))}
+                </Grid2>
+                <div className='section-header'>
+                    Graphs
+                </div>
+                <div className='section-break' />
+                <Graphs activities={data.activities} sport={this.props.sport} />
+                <div className='section-header'>
+                    Highlights
+                </div>
+                <div className='section-break' />
+                {Object.entries(data['highlights']).map(([key, value]) => (
+                    value ? (
+                        <HighlightCard key={key} highlightName={key} data={value} sport={this.props.sport} />
+                    ) : null
+                ))}
+            </div>
+        )
+    }
+}
+
+export default SportResults;

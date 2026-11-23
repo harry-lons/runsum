@@ -1,0 +1,10 @@
+{
+  "name": "runsum",
+  "version": "1.0.0",
+  "private": true,
+  "description": "RunSum monorepo — web app and API",
+  "scripts": {
+    "install:all": "bash scripts/cloud-install.sh",
+    "dev": "bash scripts/cloud-start.sh"
+  }
+}

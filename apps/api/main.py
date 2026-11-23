@@ -3,9 +3,10 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from dotenv import load_dotenv
 from stravalib import Client
 from flask_cors import CORS
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import helpers as h
 from db import db_utils as db
+from mock import strava_mock as mock
 import os
 import logging
 import argparse
@@ -17,7 +18,7 @@ CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 FRONTEND_URL = os.getenv('FRONTEND_URL')
 SECURE = os.getenv('SECURE') == 'true' # convert t/f string to boolean
-JWT_SECRET = os.getenv('JWT_SECRET')
+JWT_SECRET = os.getenv('JWT_SECRET') or ('dev-mock-secret' if mock.is_mock_mode() else None)
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -116,6 +117,30 @@ def authenticate_me():
         data = request.get_json()
         code = data['code']
         logger.debug(f"Auth code received (length: {len(code)})")
+
+        # Local mock login — no Strava credentials required
+        if mock.is_mock_mode() and code in ("mock", "demo"):
+            logger.info("Mock Strava login")
+            athlete_info = mock.mock_athlete()
+            acc_tok, ref_tok, exp_at = mock.mock_login_tokens()
+            athlete_id = athlete_info["id"]
+            firstname = athlete_info["firstname"]
+            lastname = athlete_info["lastname"]
+
+            existing_athlete = db.get_athlete_by_id(athlete_id)
+            if existing_athlete:
+                db.update_athlete_tokens(athlete_id, acc_tok, ref_tok, exp_at)
+                db.update_athlete_name(athlete_id, firstname, lastname)
+            else:
+                db.create_athlete(athlete_id, firstname, lastname, acc_tok, ref_tok, exp_at)
+
+            JWT = create_access_token(
+                identity={"id": athlete_id, "first_name": firstname},
+                expires_delta=timedelta(days=30),
+            )
+            resp = jsonify({"first_name": firstname, "id": athlete_id, "success": True, "mock": True})
+            set_access_cookies(resp, JWT)
+            return resp, 200
         
         # Exchange auth code for Strava tokens
         logger.info("Exchanging auth code for Strava tokens")
@@ -308,6 +333,67 @@ def get_activities():
     except Exception as e:
         logger.error(f"Failed to fetch activities: {str(e)}", exc_info=True)
         return jsonify({"error": f"Failed to fetch activities: {str(e)}"}), 500
+
+
+def _ensure_fresh_token(athlete, user_id):
+    """Refresh Strava token if expired. Returns updated athlete dict."""
+    now = datetime.now()
+    expires_at = athlete['expires_at']
+    if expires_at > now:
+        return athlete
+
+    if mock.is_mock_mode() or str(athlete.get("access_token", "")).startswith("mock-"):
+        return athlete
+
+    logger.info("Access token expired, refreshing...")
+    new_access_token, new_expires_at = h.refresh_strava_token(
+        athlete['refresh_token'], CLIENT_ID, CLIENT_SECRET
+    )
+    db.update_athlete_tokens(user_id, new_access_token, athlete['refresh_token'], new_expires_at)
+    athlete['access_token'] = new_access_token
+    athlete['expires_at'] = new_expires_at
+    return athlete
+
+
+@app.route('/api/dashboard', methods=['GET'])
+@jwt_required()
+def get_dashboard():
+    """Training dashboard for a recent window (default 28 days). No date picker required."""
+    try:
+        window_days = int(request.args.get('days', 28))
+        window_days = max(7, min(window_days, 90))
+
+        user = get_jwt_identity()
+        athlete = db.get_athlete_by_id(user["id"])
+        if not athlete:
+            return jsonify({"error": "User not found in database"}), 404
+
+        athlete = _ensure_fresh_token(athlete, user["id"])
+
+        now = datetime.now(timezone.utc)
+        after = int((now - timedelta(days=window_days + 2)).timestamp())
+        before = int((now + timedelta(days=1)).timestamp())
+
+        # Pull up to a few pages; dashboard windows are small.
+        all_activities = []
+        for page in range(1, 4):
+            batch = h.fetch_activities(athlete, after, before, page=page)
+            all_activities.extend(batch)
+            if len(batch) < 200:
+                break
+
+        payload = mock.build_dashboard_payload(all_activities, window_days=window_days)
+        payload["success"] = True
+        payload["athlete"] = {
+            "first_name": athlete["firstname"],
+            "last_name": athlete["lastname"],
+            "id": athlete["strava_id"],
+        }
+        return jsonify(payload), 200
+    except Exception as e:
+        logger.error(f"Failed to build dashboard: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Failed to build dashboard: {str(e)}"}), 500
+
 
 if __name__ == "__main__":
     # Parse command-line arguments

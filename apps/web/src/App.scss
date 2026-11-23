@@ -17,6 +17,41 @@ body {
   min-height: 100vh;
   background: #020d2b;
   align-items: center;
+
+  /* Dashboard owns its full-bleed layout */
+  &:has(.dashboard-page),
+  &:has(.lookback-shell) {
+    background: transparent;
+    align-items: stretch;
+  }
+}
+
+.home-demo {
+  appearance: none;
+  background: transparent;
+  border: 1px solid #b3baa0;
+  color: #b3baa0;
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  padding: 10px 18px;
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+.home-demo:hover {
+  border-color: #648c94;
+  color: #648c94;
+}
+
+.home-demo:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.home-demo-error {
+  color: #e8a090;
+  font-size: 13px;
+  max-width: 28em;
 }
 
 .about-page {

@@ -2,10 +2,10 @@
 
 Monorepo for [runsum.harrylons.com](https://runsum.harrylons.com).
 
-- `apps/web` — Create React App frontend, from [`harry-lons/runsum-fe-nonorg`](https://github.com/harry-lons/runsum-fe-nonorg) `main`
-- `apps/api` — Flask API, from [`harry-lons/runsum-be-nonorg`](https://github.com/harry-lons/runsum-be-nonorg) `main`
+- `apps/web` — Create React App frontend
+- `apps/api` — Flask API with local SQLite (`apps/api/db/runsum.sqlite`)
 
-`apps/api/vercel.json` routes API requests to Flask. Locally, `npm run dev` runs the API and web app together.
+After Strava login you land on the **Dashboard** (recent training, no date range). **Lookback** is the original date-range retrospective, reachable from the top nav.
 
 ## Develop
 
@@ -14,8 +14,27 @@ npm run install:all
 npm run dev
 ```
 
-`install:all` (`scripts/cloud-install.sh`) installs the web npm dependencies and a Python virtualenv at `apps/api/venv`.
+- Web: http://localhost:3010
+- API: http://localhost:3011
 
-`dev` (`scripts/cloud-start.sh`) starts the API on port 3011 and the web app on port 3010. The web app calls the API at `http://localhost:3011` unless `REACT_APP_BACKEND_URL` is already set.
+`dev` enables **mock Strava** by default (`STRAVA_MOCK=1`) so you can click **Preview dashboard (demo data)** on the home page without a Strava app. Set `STRAVA_MOCK=0` and fill real `CLIENT_ID` / `CLIENT_SECRET` / `JWT_SECRET` to use live Strava.
 
-Each app still has its own README for Strava credentials and environment variables. The API keeps its data in a local SQLite file, `apps/api/db/runsum.sqlite`, created on startup.
+For live OAuth, register the callback URL as `http://localhost:3010/dashboard` (and production `https://runsum.harrylons.com/dashboard`).
+
+### Tests
+
+```bash
+# API (mock Strava + dashboard)
+cd apps/api && .venv/bin/python -m unittest tests.test_dashboard_mock -v
+
+# Web
+CI=true npm test --prefix apps/web -- --watchAll=false
+```
+
+### Scripts
+
+| Command | What it does |
+| --- | --- |
+| `npm run install:all` | Web `npm ci` + API venv |
+| `npm run dev` | API `:3011` + web `:3010` |
+| `npm run smoke` | Health checks (servers already up) |

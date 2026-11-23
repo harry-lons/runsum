@@ -4,6 +4,8 @@ from db import db_utils as db
 import requests
 import time
 
+from mock import strava_mock as mock
+
 def get_token_from_code(auth_client, code, CLIENT_ID, CLIENT_SECRET):
     try:
         token_response = auth_client.exchange_code_for_token(
@@ -101,7 +103,9 @@ def get_valid_strava_client(athlete, CLIENT_ID, CLIENT_SECRET):
 def fetch_activities(athlete, after_epoch, before_epoch, page):
     
     # Fetch one page of activities from Strava API
-    
+    if mock.is_mock_mode() or (athlete and str(athlete.get("access_token", "")).startswith("mock-")):
+        return mock.mock_fetch_activities(after_epoch, before_epoch, page)
+
     # Make the API call (page 1, up to 200 activities)
     url = f"https://www.strava.com/api/v3/athlete/activities?after={after_epoch}&before={before_epoch}&page={page}&per_page=200"
     

@@ -7,7 +7,9 @@ set -m
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-if [[ -x "$ROOT/apps/api/venv/bin/python" ]]; then
+if [[ -x "$ROOT/apps/api/.venv/bin/python" ]]; then
+  PYTHON="$ROOT/apps/api/.venv/bin/python"
+elif [[ -x "$ROOT/apps/api/venv/bin/python" ]]; then
   PYTHON="$ROOT/apps/api/venv/bin/python"
 else
   PYTHON="$(command -v python3)"
@@ -30,6 +32,11 @@ trap cleanup EXIT INT TERM
 (
   cd "$ROOT/apps/api"
   export PORT="$API_PORT"
+  # Local/cloud agents: mock Strava so the dashboard works without OAuth credentials.
+  # Set STRAVA_MOCK=0 to use a real Strava app instead.
+  export STRAVA_MOCK="${STRAVA_MOCK:-1}"
+  export JWT_SECRET="${JWT_SECRET:-dev-mock-secret}"
+  export FRONTEND_URL="${FRONTEND_URL:-http://localhost:${WEB_PORT}}"
   exec "$PYTHON" main.py
 ) &
 pids+=("$!")

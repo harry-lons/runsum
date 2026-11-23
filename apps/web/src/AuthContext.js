@@ -4,26 +4,25 @@ import { useNavigate } from 'react-router-dom';
 
 export const AuthContext = createContext(null);
 
+const AUTH_SKIP_PATHS = new Set(["/needlogin", "/about", "/FAQ"]);
+
 // Unified component to handle all authentication
 export default function AuthProvider({ children }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [firstName, setFirstName] = useState("");
+    const [authReady, setAuthReady] = useState(false);
 
     // Try logging in 
     // 1. Try to log in from JWT saved to cookie
-    // 2. Else try to log in from code in URL bar (on login to landing page)
+    // 2. Else try to log in from code in URL bar (on login to landing/dashboard)
     // 3. Else redirect to need login page
     const login = async () => {
         // Try to log in from JWT saved to cookie
         const i_am = await whoAmI().then(data => {
             if (data != null && data['success']) {
-                // success
-                // console.log(data)
                 setFirstName(data['first_name'])
                 setIsAuthenticated(true)
-                console.log("done setting")
                 return true
-
             }
             else {
                 return false
@@ -31,7 +30,6 @@ export default function AuthProvider({ children }) {
         });
 
         if (i_am) {
-            // we got an auth state from existing token, return early
             return true
         }
 
@@ -41,12 +39,10 @@ export default function AuthProvider({ children }) {
         if (searchParams.has('code')) {
             code = searchParams.get('code');
         }
-        else return false // no code found in url
+        else return false
 
-        // console.log("Logging in with code:", code);
         return loginWithCode(code).then(data => {
             if (data && data['success']) {
-                // success
                 if (data['first_name'] && data['id']) {
                     setFirstName(data['first_name']);
                 }
@@ -55,7 +51,6 @@ export default function AuthProvider({ children }) {
                 setIsAuthenticated(true);
                 return true;
             } else {
-                // code failed
                 console.error("logging in with code failed")
                 setIsAuthenticated(false);
                 setFirstName("");
@@ -66,8 +61,10 @@ export default function AuthProvider({ children }) {
 
     const navigate = useNavigate()
     useEffect(() => {
-        // if we are on the /needlogin page or /about page, don't even try to log in
-        if (window.location.pathname === "/needlogin" || window.location.pathname === "/about") return;
+        if (AUTH_SKIP_PATHS.has(window.location.pathname)) {
+            setAuthReady(true);
+            return;
+        }
 
         console.log("AuthContext: useEffect checking login status. Path:", window.location.pathname);
 
@@ -75,24 +72,42 @@ export default function AuthProvider({ children }) {
             try {
                 const success = await login();
                 console.log("AuthContext: doLogin finished. Success:", success);
+                const path = window.location.pathname;
                 
-                if(window.location.pathname === "/"){
-                    if(success){
-                        console.log("AuthContext: Redirecting to /remembered");
-                        navigate("/remembered")
+                if (path === "/") {
+                    if (success) {
+                        console.log("AuthContext: Redirecting to /dashboard");
+                        navigate("/dashboard");
                     }
-                    else {
-                        // do not go to needlogin
-                        return true
-                    }
+                    return;
                 }
-                else if (!success) {
-                    // prompt the user to go through strava OAUTH again
+
+                if (path === "/remembered" && success) {
+                    navigate("/dashboard", { replace: true });
+                    return;
+                }
+
+                // Fresh OAuth on /landing → send to dashboard (lookback is opt-in via nav)
+                if (path === "/landing" && success && new URLSearchParams(window.location.search).has('code')) {
+                    navigate("/dashboard", { replace: true });
+                    return;
+                }
+
+                // Fresh OAuth already on /dashboard — strip code from URL
+                if (path === "/dashboard" && success && new URLSearchParams(window.location.search).has('code')) {
+                    navigate("/dashboard", { replace: true });
+                    return;
+                }
+
+                if (!success) {
                     window.location.href = "/needlogin";
                 }
             }
             catch (Exception) {
                 window.location.href = "/needlogin";
+            }
+            finally {
+                setAuthReady(true);
             }
         };
 
@@ -114,7 +129,9 @@ export default function AuthProvider({ children }) {
             value={{
                 isAuthenticated: isAuthenticated,
                 firstName: firstName,
-                // pass the function to log in with code and log out
+                authReady,
+                setIsAuthenticated,
+                setFirstName,
                 login: login,
                 logout: logout,
             }}

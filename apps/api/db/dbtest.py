@@ -1,42 +1,29 @@
-import oracledb
 import os
-from dotenv import load_dotenv
+import sys
 
-# simple script to test connection to the database
+# simple script to test connection to the local SQLite database
 
-# Load .env from parent directory
-env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
-load_dotenv(env_path)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-# Get database credentials from environment variables
-username = os.getenv('ORACLE_USER', 'ADMIN')  # Default to ADMIN, or set via env var
-password = os.getenv('ORACLE_PASSWORD')  # Must be set as environment variable
-
-# TNS connection string for TLS (one-way) mode - no wallet needed
-dsn = os.getenv('ORACLE_DSN')
+from db.db_utils import DB_PATH, get_db_connection
 
 try:
-    # Connect using TLS (one-way) - no wallet needed
-    connection = oracledb.connect(
-        user=username,
-        password=password,
-        dsn=dsn
-    )
-    
-    print("Successfully connected to Oracle Autonomous Database!")
-    print(f"Database version: {connection.version}")
-    
-    # Test query
+    connection = get_db_connection()
+
+    print("Successfully connected to local SQLite database!")
+    print(f"Database file: {DB_PATH}")
+
     cursor = connection.cursor()
-    cursor.execute("SELECT 'Hello from Oracle!' as message FROM dual")
+    cursor.execute("SELECT sqlite_version()")
+    print(f"SQLite version: {cursor.fetchone()[0]}")
+
+    cursor.execute("SELECT 'Hello from SQLite!'")
     result = cursor.fetchone()
     print(f"Query result: {result[0]}")
-    
+
     cursor.close()
     connection.close()
     print("Connection closed successfully.")
-    
-except oracledb.Error as error:
+
+except Exception as error:
     print(f"Error connecting to database: {error}")
-except Exception as e:
-    print(f"Unexpected error: {e}")

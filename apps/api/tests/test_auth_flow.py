@@ -1,5 +1,5 @@
 """
-Test script for the full authentication flow with Oracle database integration.
+Test script for the full authentication flow with the local SQLite database.
 
 Before running this test, change the auth_code. You will have to do some clever fandangling to actually get a code for yourself.
 This is because the code is one-time-use

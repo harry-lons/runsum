@@ -1,11 +1,17 @@
-CREATE TABLE athlete (
-  StravaAthleteID NUMBER(19) NOT NULL PRIMARY KEY,
-  firstname VARCHAR2(255),
-  lastname VARCHAR2(255),
+CREATE TABLE IF NOT EXISTS athlete (
+  StravaAthleteID INTEGER NOT NULL PRIMARY KEY,
+  firstname TEXT,
+  lastname TEXT,
   firstlogin TIMESTAMP,
   lastlogin TIMESTAMP,
-  access_token VARCHAR2(255),
-  ref_token VARCHAR2(255),
+  access_token TEXT,
+  ref_token TEXT,
   exp_at TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS queries (
+  athlete_id INTEGER NOT NULL,
+  querytime TIMESTAMP,
+  startdate TIMESTAMP,
+  enddate TIMESTAMP
+);

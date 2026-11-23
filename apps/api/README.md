@@ -2,6 +2,8 @@
 
 Backend for https://runsum.harrylons.com
 
+Athlete records and Strava tokens are stored in a local SQLite database at `db/runsum.sqlite`. The API creates the file and tables on startup. Existing Oracle data is not imported.
+
 ```pip install -r requirements.txt```
 
 dev:

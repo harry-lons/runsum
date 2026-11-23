@@ -1,14 +1,14 @@
-# Runsum Backend - Oracle Database Integration Testing Guide
+# Runsum Backend - SQLite Database Integration Testing Guide
 
-This guide will help you test the complete authentication flow with Oracle Autonomous Database integration.
+This guide will help you test the complete authentication flow with the local SQLite database.
 
 ## Overview
 
-The backend now uses Oracle Autonomous Database to store and manage athlete data and Strava credentials. The flow works as follows:
+The backend uses a local SQLite database (`db/runsum.sqlite`) to store and manage athlete data and Strava credentials. The file is created on startup. Existing Oracle data is not imported. The flow works as follows:
 
 1. **User authenticates** via Strava OAuth → Backend receives auth code
 2. **Backend exchanges code** for Strava tokens (access_token, refresh_token, expires_at)
-3. **Backend stores/updates** athlete data and tokens in Oracle database
+3. **Backend stores/updates** athlete data and tokens in the local SQLite database
 4. **Backend returns JWT** to frontend for session management
 5. **Subsequent requests** use JWT for authentication, while backend fetches Strava tokens from database
 
@@ -28,31 +28,11 @@ FRONTEND_URL=http://localhost:3000
 # Security
 SECURE=false  # Set to true in production with HTTPS
 JWT_SECRET=your_jwt_secret
-
-# Oracle Database
-ORACLE_USER=ADMIN
-ORACLE_PASSWORD=your_oracle_password
-WALLET_PASSWORD=  # Usually empty for Autonomous DB
 ```
 
 ### 2. Database Setup
 
-Ensure the `athlete` table exists in your Oracle database. You can find the schema in `db/schemas.sql`:
-
-```sql
-CREATE TABLE athlete (
-  StravaAthleteID NUMBER(19) NOT NULL PRIMARY KEY,
-  firstname VARCHAR2(255),
-  lastname VARCHAR2(255),
-  firstlogin TIMESTAMP,
-  lastlogin TIMESTAMP,
-  access_token VARCHAR2(255),
-  ref_token VARCHAR2(255),
-  exp_at TIMESTAMP
-);
-```
-
-Run this SQL in your SQL editor or Oracle SQL Developer to create the table.
+The API creates `db/runsum.sqlite` and the tables in `db/schemas.sql` on startup. You do not need a separate database client.
 
 ### 3. Test Database Connection
 
@@ -65,9 +45,10 @@ python dbtest.py
 
 You should see:
 ```
-Successfully connected to Oracle Autonomous Database!
-Database version: X.X.X
-Query result: Hello from Oracle!
+Successfully connected to local SQLite database!
+Database file: /path/to/apps/api/db/runsum.sqlite
+SQLite version: X.X.X
+Query result: Hello from SQLite!
 Connection closed successfully.
 ```
 
@@ -266,9 +247,8 @@ Updates athlete's name (in case it changed on Strava).
 ### Connection Issues
 
 **Error:** `Error connecting to database`
-- Verify `.env` file has correct `ORACLE_PASSWORD`
-- Check that `wallet/` directory is in the correct location
-- Ensure wallet files are valid and not expired
+- Confirm the process can write `db/runsum.sqlite`
+- Check the SQLite error printed by the API
 
 ### Authentication Issues
 
@@ -318,10 +298,7 @@ runsum-backend/
 │   ├── test_auth_flow.py  # Test script for full auth flow
 │   ├── TESTING_GUIDE.md   # This file
 │   └── CHANGES_SUMMARY.md # Changes documentation
-├── wallet/                # Oracle wallet files
-│   ├── cwallet.sso
-│   ├── tnsnames.ora
-│   └── ...
+├── db/runsum.sqlite       # Local SQLite database (created on startup, not in git)
 └── .env                   # Environment variables (not in git)
 ```
 

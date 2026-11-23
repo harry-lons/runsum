@@ -1,7 +1,7 @@
-# Oracle Database Integration - Changes Summary
+# SQLite Database Integration - Changes Summary
 
 ## Overview
-The backend has been updated to use Oracle Autonomous Database for storing athlete data and Strava credentials. JWT tokens are still used for frontend-backend authentication, but Strava tokens are now securely stored in the database.
+The backend stores athlete data and Strava credentials in a local SQLite database (`db/runsum.sqlite`). The API creates the file and tables on startup. JWT tokens are still used for frontend-backend authentication, but Strava tokens are stored in the database. Existing Oracle data is not imported.
 
 ## New Files Created
 
@@ -53,17 +53,17 @@ Complete documentation covering:
 
 ## Database Schema
 
-The database schema is defined in `db/schemas.sql`. Create the table using your SQL editor:
+The database schema is defined in `db/schemas.sql` and applied automatically on startup:
 
 ```sql
-CREATE TABLE athlete (
-  StravaAthleteID NUMBER(19) NOT NULL PRIMARY KEY,
-  firstname VARCHAR2(255),
-  lastname VARCHAR2(255),
+CREATE TABLE IF NOT EXISTS athlete (
+  StravaAthleteID INTEGER NOT NULL PRIMARY KEY,
+  firstname TEXT,
+  lastname TEXT,
   firstlogin TIMESTAMP,
   lastlogin TIMESTAMP,
-  access_token VARCHAR2(255),
-  ref_token VARCHAR2(255),
+  access_token TEXT,
+  ref_token TEXT,
   exp_at TIMESTAMP
 );
 ```
@@ -82,7 +82,7 @@ User → Strava OAuth → Backend exchanges code for tokens
 ### After (New Flow)
 ```
 User → Strava OAuth → Backend exchanges code for tokens
-     → Backend stores tokens in Oracle database
+     → Backend stores tokens in the local SQLite database
      → Backend creates JWT with only user ID
      → JWT sent to frontend
      → Frontend sends JWT with each request
@@ -103,7 +103,7 @@ User → Strava OAuth → Backend exchanges code for tokens
 
 ### Quick Test
 ```bash
-# 1. Ensure athlete table exists in database (run schemas.sql in your SQL editor)
+# 1. Starting the API creates db/runsum.sqlite and the tables
 
 # 2. Test database connection
 cd db
@@ -130,11 +130,6 @@ See `TESTING_GUIDE.md` for detailed instructions.
 CLIENT_ID=your_strava_client_id
 CLIENT_SECRET=your_strava_client_secret
 
-# Oracle Database
-ORACLE_USER=ADMIN
-ORACLE_PASSWORD=your_oracle_password
-WALLET_PASSWORD=  # Usually empty for Autonomous DB
-
 # App
 FRONTEND_URL=http://localhost:3000
 SECURE=false  # Set to true in production
@@ -153,9 +148,8 @@ JWT_SECRET=your_jwt_secret
 ## Troubleshooting
 
 ### "Error connecting to database"
-- Check `.env` file has correct `ORACLE_PASSWORD`
-- Verify wallet files are in `wallet/` directory
-- Ensure wallet hasn't expired (check `wallet/README`)
+- Confirm the process can write `db/runsum.sqlite`
+- Check the SQLite error printed by the API
 
 ### "User not found in database"
 - User must authenticate via `/auth/login` first

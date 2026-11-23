@@ -5,7 +5,7 @@ This guide walks you through deploying the Runsum backend to Render's free tier.
 ## Prerequisites
 - GitHub account with this repo pushed
 - Render account (free) at https://render.com
-- Oracle Autonomous Database configured for TLS (not mTLS)
+- No external database. The API creates a local SQLite file at `db/runsum.sqlite` on startup. Render's filesystem is ephemeral, so that file is empty after each new instance and is not migrated from Oracle.
 
 ## Step 1: Create Web Service on Render
 
@@ -29,12 +29,7 @@ CLIENT_SECRET=your_strava_client_secret
 FRONTEND_URL=https://your-frontend-url.com
 SECURE=true
 JWT_SECRET=your_jwt_secret_key
-ORACLE_USER=ADMIN
-ORACLE_PASSWORD=your_oracle_password
-ORACLE_DSN=(description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.us-sanjose-1.oraclecloud.com))(connect_data=(service_name=gb4d36291b4e17a_runsum_high.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
 ```
-
-**Note:** Database now uses TLS (one-way) mode - no wallet files needed!
 
 **Important:** Make sure `FRONTEND_URL` matches your actual frontend domain!
 
@@ -66,9 +61,8 @@ The free tier spins down after 15 minutes of inactivity. To prevent this:
 ## Troubleshooting
 
 ### "Error connecting to database"
-- Verify `ORACLE_USER` and `ORACLE_PASSWORD` are correct
-- Check that `ORACLE_DSN` is properly formatted and matches your database
-- Ensure your Oracle database is configured for TLS (not mTLS) access
+- Confirm the service can write `db/runsum.sqlite` next to the API code
+- Check Render logs for the SQLite error printed by the API
 
 ### "ModuleNotFoundError"
 - Make sure `requirements.txt` is up to date

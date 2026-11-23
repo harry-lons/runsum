@@ -18,4 +18,4 @@ npm run dev
 
 `dev` (`scripts/cloud-start.sh`) starts the API on port 3011 and the web app on port 3010. The web app calls the API at `http://localhost:3011` unless `REACT_APP_BACKEND_URL` is already set.
 
-Each app still has its own README for Strava credentials and environment variables.
+Each app still has its own README for Strava credentials and environment variables. The API keeps its data in a local SQLite file, `apps/api/db/runsum.sqlite`, created on startup.

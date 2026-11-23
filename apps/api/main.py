@@ -12,6 +12,7 @@ import argparse
 import time
 
 load_dotenv()
+db.init_db()
 CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 FRONTEND_URL = os.getenv('FRONTEND_URL')

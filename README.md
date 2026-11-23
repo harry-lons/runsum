@@ -5,7 +5,7 @@ Monorepo for [runsum.harrylons.com](https://runsum.harrylons.com).
 - `apps/web` — Create React App frontend, from [`harry-lons/runsum-fe-nonorg`](https://github.com/harry-lons/runsum-fe-nonorg) `main`
 - `apps/api` — Flask API, from [`harry-lons/runsum-be-nonorg`](https://github.com/harry-lons/runsum-be-nonorg) `main`
 
-Production routing is unchanged. `apps/web/vercel.json` still rewrites `/api` to the Render backend, and `apps/api/vercel.json` still sends every route to `main.py`.
+`apps/api/vercel.json` routes API requests to Flask. Locally, `npm run dev` runs the API and web app together.
 
 ## Develop
 

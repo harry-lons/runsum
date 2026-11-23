@@ -3,7 +3,10 @@
 /__pycache__/
 .DS_Store
 .vercel
-/wallet/
+/db/*.sqlite
+/db/*.sqlite-journal
+/db/*.sqlite-wal
+/db/*.sqlite-shm
 /db/dbtest.py
 /db/db_diagnose.py
 /db/__pycache__/

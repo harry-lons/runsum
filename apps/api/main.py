@@ -12,6 +12,7 @@ import argparse
 import time
 
 load_dotenv()
+db.init_db()
 CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 FRONTEND_URL = os.getenv('FRONTEND_URL')
@@ -322,7 +323,7 @@ if __name__ == "__main__":
     else:
         logging.getLogger().setLevel(logging.INFO)
     
-    # Use PORT from environment (Render provides this), default to 3011 for local
+    # Use PORT from the environment when present; default to 3011 for local
     port = int(os.getenv('PORT', 3011))
     
     logger.info(f"Starting server on port {port}")
@@ -330,6 +331,6 @@ if __name__ == "__main__":
     logger.info(f"Secure mode: {SECURE}")
     
     # Use 0.0.0.0 to accept connections from any IP (required for cloud hosting)
-    # Disable debug mode in production (check RENDER env var)
-    debug_mode = not bool(os.getenv('RENDER'))
+    # Debug locally; set FLASK_DEBUG=0 (or false/no) to disable
+    debug_mode = os.getenv('FLASK_DEBUG', '1').lower() not in ('0', 'false', 'no')
     app.run(host='0.0.0.0', port=port, debug=debug_mode)

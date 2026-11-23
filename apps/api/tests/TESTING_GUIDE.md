@@ -296,8 +296,7 @@ runsum-backend/
 │   └── schemas.sql        # SQL schema definitions
 ├── tests/
 │   ├── test_auth_flow.py  # Test script for full auth flow
-│   ├── TESTING_GUIDE.md   # This file
-│   └── CHANGES_SUMMARY.md # Changes documentation
+│   └── TESTING_GUIDE.md   # This file
 ├── db/runsum.sqlite       # Local SQLite database (created on startup, not in git)
 └── .env                   # Environment variables (not in git)
 ```

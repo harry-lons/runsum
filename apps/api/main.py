@@ -355,6 +355,29 @@ def _ensure_fresh_token(athlete, user_id):
     return athlete
 
 
+@app.route('/api/activities/<int:activity_id>', methods=['GET'])
+@jwt_required()
+def get_activity(activity_id):
+    """Single activity detail for the in-app activity page."""
+    try:
+        user = get_jwt_identity()
+        athlete = db.get_athlete_by_id(user["id"])
+        if not athlete:
+            return jsonify({"error": "User not found in database"}), 404
+
+        athlete = _ensure_fresh_token(athlete, user["id"])
+        raw = h.fetch_activity(athlete, activity_id)
+        if not raw:
+            return jsonify({"error": "Activity not found"}), 404
+
+        detail = mock.serialize_activity_detail(raw, include_streams=True)
+        detail["success"] = True
+        return jsonify(detail), 200
+    except Exception as e:
+        logger.error(f"Failed to fetch activity {activity_id}: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Failed to fetch activity: {str(e)}"}), 500
+
+
 @app.route('/api/dashboard', methods=['GET'])
 @jwt_required()
 def get_dashboard():

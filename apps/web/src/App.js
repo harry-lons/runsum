@@ -11,12 +11,14 @@ import Results from './pages/Results';
 import Remembered from './pages/Remembered';
 import FAQ from './pages/FAQ';
 import Dashboard from './pages/Dashboard';
+import ActivityDetail from './pages/ActivityDetail';
 import AuthContext from './AuthContext';
 import LookbackLayout from './pages/LookbackLayout';
 
 function AppShell() {
   const location = useLocation();
-  const hideFooter = location.pathname === '/dashboard';
+  const hideFooter =
+    location.pathname === '/dashboard' || location.pathname.startsWith('/activity/');
 
   return (
     <div className="App">
@@ -24,6 +26,7 @@ function AppShell() {
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/activity/:activityId" element={<ActivityDetail />} />
         <Route path="/landing" element={<LookbackLayout><Landing /></LookbackLayout>} />
         <Route path="/needlogin" element={<NeedLogin />} />
         <Route path="/results" element={<LookbackLayout><Results /></LookbackLayout>} />

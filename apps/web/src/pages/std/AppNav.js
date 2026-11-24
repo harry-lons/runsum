@@ -19,7 +19,11 @@ export default function AppNav() {
         <nav className="app-nav__tabs" aria-label="Primary">
           <NavLink
             to="/dashboard"
-            className={({ isActive }) => `app-nav__tab${isActive ? ' is-active' : ''}`}
+            className={({ isActive }) => {
+              const onDash =
+                isActive || window.location.pathname.startsWith('/activity/');
+              return `app-nav__tab${onDash ? ' is-active' : ''}`;
+            }}
           >
             Dashboard
           </NavLink>

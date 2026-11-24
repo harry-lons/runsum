@@ -74,6 +74,22 @@ class DashboardMockTests(unittest.TestCase):
         resp = naked.get("/api/dashboard")
         self.assertEqual(resp.status_code, 401)
 
+    def test_activity_detail(self):
+        self.client.post("/api/auth/login", json={"code": "mock"})
+        dash = self.client.get("/api/dashboard?days=28").get_json()
+        activity_id = dash["recent"][0]["id"]
+        detail = self.client.get(f"/api/activities/{activity_id}")
+        self.assertEqual(detail.status_code, 200, detail.get_data(as_text=True))
+        body = detail.get_json()
+        self.assertTrue(body["success"])
+        self.assertEqual(body["id"], activity_id)
+        self.assertTrue(body["name"])
+        self.assertTrue(body["streams"])
+        self.assertGreater(len(body["streams"]["distance_mi"]), 10)
+
+        missing = self.client.get("/api/activities/1")
+        self.assertEqual(missing.status_code, 404)
+
 
 if __name__ == "__main__":
     unittest.main()

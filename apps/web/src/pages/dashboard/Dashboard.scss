@@ -504,3 +504,24 @@
   outline: 2px solid var(--rs-accent);
   outline-offset: 3px;
 }
+
+.activity-detail__back {
+  margin: 0 0 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.activity-detail__back a {
+  color: var(--rs-ink-2);
+  text-decoration: none;
+}
+
+.activity-detail__back a:hover {
+  color: var(--rs-accent);
+}
+
+.activity-detail__meta {
+  margin: -24px 0 36px;
+  font-size: 14px;
+  color: var(--rs-ink-2);
+}

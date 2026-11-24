@@ -38,3 +38,23 @@ export async function mockLogin() {
   }
   return response.json();
 }
+
+export async function fetchActivity(activityId) {
+  const csrfToken = getCookie('csrf_access_token');
+  const response = await fetch(`${API_BASE_URL}/api/activities/${activityId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-TOKEN': csrfToken,
+    },
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    const err = new Error(
+      response.status === 404 ? 'Activity not found' : `Activity request failed (${response.status})`
+    );
+    err.status = response.status;
+    throw err;
+  }
+  return response.json();
+}

@@ -6,6 +6,27 @@ import time
 
 from mock import strava_mock as mock
 
+
+def fetch_activity(athlete, activity_id):
+    """Fetch a single activity by id (mock fixture or Strava API)."""
+    if mock.is_mock_mode() or (athlete and str(athlete.get("access_token", "")).startswith("mock-")):
+        return mock.mock_get_activity(int(activity_id))
+
+    url = f"https://www.strava.com/api/v3/activities/{int(activity_id)}"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {athlete['access_token']}",
+    }
+    try:
+        response = requests.get(url, headers=headers, timeout=20)
+        if not response.ok:
+            print(f"Error fetching activity {activity_id}: {response.status_code}")
+            return None
+        return response.json()
+    except Exception as e:
+        print(f"Error fetching activity {activity_id}: {e}")
+        return None
+
 def get_token_from_code(auth_client, code, CLIENT_ID, CLIENT_SECRET):
     try:
         token_response = auth_client.exchange_code_for_token(

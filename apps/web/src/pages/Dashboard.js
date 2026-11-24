@@ -1,4 +1,5 @@
 import { useCallback, useContext, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
 import AppNav from './std/AppNav';
 import { fetchDashboard } from './dashboard/dashboardApi';
@@ -140,12 +141,7 @@ function Dashboard() {
               <ul className="dash-feed">
                 {data.recent.map((act) => (
                   <li key={act.id}>
-                    <a
-                      className="dash-feed__row"
-                      href={act.strava_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
+                    <Link className="dash-feed__row" to={`/activity/${act.id}`}>
                       <span className="dash-feed__date">{formatActivityDate(act.start_date_local)}</span>
                       <span className="dash-feed__main">
                         <span className="dash-feed__name">{act.name}</span>
@@ -154,7 +150,7 @@ function Dashboard() {
                       <span className="dash-feed__num">{act.distance_mi} mi</span>
                       <span className="dash-feed__num">{act.pace ? `${act.pace}` : '—'}</span>
                       <span className="dash-feed__num">{act.moving_time_label}</span>
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>

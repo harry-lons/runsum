@@ -62,6 +62,83 @@ def mock_fetch_activities(after_epoch, before_epoch, page, per_page: int = 200) 
     return filtered[start:end]
 
 
+def mock_get_activity(activity_id: int) -> dict | None:
+    """Return one fixture activity by id, or None."""
+    for activity in _load_fixture()["activities"]:
+        if int(activity["id"]) == int(activity_id):
+            return activity
+    return None
+
+
+def _synthetic_streams(activity: dict) -> dict[str, list]:
+    """Build deterministic distance/pace/HR/elevation series for detail charts."""
+    import math
+    import random
+
+    distance_m = float(activity.get("distance") or 0)
+    moving = float(activity.get("moving_time") or 1)
+    elev = float(activity.get("total_elevation_gain") or 0)
+    avg_hr = float(activity.get("average_heartrate") or 140)
+    max_hr = float(activity.get("max_heartrate") or avg_hr + 20)
+    rng = random.Random(int(activity.get("id") or 0))
+
+    points = max(24, min(80, int(distance_m / 200) or 24))
+    distances_mi = []
+    pace_sec = []
+    heartrate = []
+    altitude = []
+
+    base_pace = (moving / max(_meters_to_miles(distance_m), 0.01)) if distance_m else 480
+    for i in range(points):
+        t = i / (points - 1)
+        distances_mi.append(round(_meters_to_miles(distance_m) * t, 3))
+        # mild undulation around average pace
+        wave = math.sin(t * math.pi * 3) * 18 + math.sin(t * math.pi * 7) * 8
+        pace_sec.append(round(max(240, base_pace + wave + rng.uniform(-6, 6)), 1))
+        hr = avg_hr + (max_hr - avg_hr) * (0.35 + 0.5 * math.sin(t * math.pi)) + rng.uniform(-4, 4)
+        heartrate.append(round(hr, 1))
+        # climb then descent-ish profile
+        alt = elev * math.sin(t * math.pi) * 0.85 + rng.uniform(-2, 2)
+        altitude.append(round(max(0, alt) * 3.28084, 1))  # feet
+
+    return {
+        "distance_mi": distances_mi,
+        "pace_sec_per_mi": pace_sec,
+        "heartrate": heartrate,
+        "altitude_ft": altitude,
+    }
+
+
+def serialize_activity_detail(activity: dict, *, include_streams: bool = True) -> dict[str, Any]:
+    """Normalize a Strava summary/detail activity for the activity page."""
+    dist = float(activity.get("distance") or 0)
+    moving = float(activity.get("moving_time") or 0)
+    sport = activity.get("type") or activity.get("sport_type")
+    detail = {
+        "id": activity.get("id"),
+        "name": activity.get("name"),
+        "type": sport,
+        "start_date_local": activity.get("start_date_local") or activity.get("start_date"),
+        "distance_mi": round(_meters_to_miles(dist), 2),
+        "moving_time": int(moving),
+        "moving_time_label": _format_duration(moving),
+        "elapsed_time": int(activity.get("elapsed_time") or moving),
+        "pace": _format_pace(dist, moving) if sport == "Run" else None,
+        "elevation_ft": round((activity.get("total_elevation_gain") or 0) * 3.28084, 0),
+        "average_heartrate": activity.get("average_heartrate"),
+        "max_heartrate": activity.get("max_heartrate"),
+        "average_speed_mph": round((activity.get("average_speed") or 0) * 2.23694, 2),
+        "suffer_score": activity.get("suffer_score"),
+        "strava_url": f"https://www.strava.com/activities/{activity.get('id')}",
+        "mock": is_mock_mode(),
+    }
+    if include_streams and (is_mock_mode() or not activity.get("map", {}).get("summary_polyline")):
+        detail["streams"] = _synthetic_streams(activity)
+    else:
+        detail["streams"] = None
+    return detail
+
+
 def _meters_to_miles(meters: float) -> float:
     return meters / 1609.344
 
